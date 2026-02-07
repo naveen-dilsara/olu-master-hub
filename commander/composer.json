@@ -1,0 +1,11 @@
+{
+    "name": "olutek/master-hub",
+    "description": "OLU Master Hub - Centralized Plugin Dispatcher",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Olu\\Commander\\": "src/"
+        }
+    },
+    "require": {}
+}

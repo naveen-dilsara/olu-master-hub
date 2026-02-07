@@ -1,0 +1,9 @@
+/vendor/
+/node_modules/
+*.env
+*.sqlite
+*.log
+.DS_Store
+/commander/storage/
+!/commander/storage/.gitkeep
+/agent/mu-plugins/olu-agent.zip
