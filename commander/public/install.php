@@ -2,7 +2,7 @@
 // OLU Master Hub - Web Installer
 // Use this to initialize the database on shared hosting (Hostinger)
 
-require_once __DIR__ . '/../src/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Olu\Commander\Core\Database;
 

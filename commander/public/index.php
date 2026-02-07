@@ -1,7 +1,7 @@
 <?php
 // OLU Master Hub - Commander Entry Point
 
-require_once __DIR__ . '/../src/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Olu\Commander\Controllers\DashboardController;
 use Olu\Commander\Controllers\AuthController;
