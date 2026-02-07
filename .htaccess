@@ -1,5 +1,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteRule ^$ commander/public/ [L]
-    RewriteRule (.*) commander/public/$1 [L]
+    Options +FollowSymLinks
+
+    # If the request is NOT properly pointing to commander/public yet...
+    RewriteCond %{REQUEST_URI} !^/commander/public/
+    
+    # Rewrite all requests to the commander/public directory
+    RewriteRule ^(.*)$ commander/public/$1 [L]
 </IfModule>
