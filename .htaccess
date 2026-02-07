@@ -1,5 +1,6 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /
     Options +FollowSymLinks
 
     # If the request is NOT properly pointing to commander/public yet...
