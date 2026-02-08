@@ -35,6 +35,11 @@ class Site {
         return $stmt->execute([$status, $id]);
     }
 
+    public function updateInterval($id, $seconds) {
+        $stmt = $this->pdo->prepare("UPDATE sites SET update_interval = ? WHERE id = ?");
+        return $stmt->execute([$seconds, $id]);
+    }
+
     public function registerOrUpdate($data) {
         $url = $data['url'];
         $stmt = $this->pdo->prepare("SELECT id FROM sites WHERE url = ?");

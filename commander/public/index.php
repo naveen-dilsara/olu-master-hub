@@ -72,6 +72,8 @@ if ($path === '/' || $path === '/index.php') {
     (new SiteController())->manage();
 } elseif ($path === '/sites/dispatch') {
     (new SiteController())->dispatch();
+} elseif ($path === '/sites/config') {
+    (new SiteController())->update_config();
 } elseif ($path === '/plugins') {
     (new PluginController())->index();
 } elseif ($path === '/plugins/upload') {

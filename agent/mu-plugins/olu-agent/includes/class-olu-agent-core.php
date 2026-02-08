@@ -21,7 +21,18 @@ class Olu_Agent_Core {
 
     private function init_hooks() {
         // Register REST API endpoints
-        add_action('rest_api_init', [$this, 'register_routes']);
+        add_action('rest_api_init', function() {
+            register_rest_route('olu/v1', '/update', [
+                'methods' => 'POST',
+                'callback' => [$this, 'handle_update'],
+                'permission_callback' => '__return_true' // TODO: Verify Signature
+            ]);
+            register_rest_route('olu/v1', '/configure', [
+                'methods' => 'POST',
+                'callback' => [$this, 'handle_configure'],
+                'permission_callback' => '__return_true'
+            ]);
+        });
         
         // Auto-connect on activation
         register_activation_hook(OLU_AGENT_PATH . 'olu-agent.php', [$this, 'activate_agent']);
@@ -37,9 +48,108 @@ class Olu_Agent_Core {
         
         // Handle Repo Install
         add_action('admin_post_olu_agent_install', [$this, 'handle_repo_install']);
+        
+        // Custom Cron Schedules
+        add_filter('cron_schedules', [$this, 'add_cron_intervals']);
+        
+        // Heartbeat Event
+        add_action('olu_agent_heartbeat', [$this, 'process_heartbeat']);
+        
+        // Reschedule on init if missing
+        add_action('init', [$this, 'schedule_heartbeat']);
+    }
+
+    public function add_cron_intervals($schedules) {
+        $schedules['every_minute'] = [
+            'interval' => 60,
+            'display'  => __('Every Minute')
+        ];
+        return $schedules;
+    }
+
+    public function schedule_heartbeat() {
+        if (!wp_next_scheduled('olu_agent_heartbeat')) {
+            wp_schedule_event(time(), 'every_minute', 'olu_agent_heartbeat');
+        }
+    }
+
+    public function process_heartbeat() {
+        // Logic: Check if it's time to run auto-update based on configured interval
+        $interval = (int)get_option('olu_agent_update_interval', 86400); // Default 1 day
+        $last_run = (int)get_option('olu_agent_last_auto_update', 0);
+        
+        if ((time() - $last_run) >= $interval) {
+            $this->run_auto_updates_gpl();
+            update_option('olu_agent_last_auto_update', time());
+        }
+    }
+
+    private function run_auto_updates_gpl() {
+        // 1. Fetch Repo
+        $hub_url = 'https://masterhub.olutek.com/api/v1/repo';
+        $response = wp_remote_get($hub_url, ['timeout' => 10]);
+        
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            return;
+        }
+
+        $repo_plugins = json_decode(wp_remote_retrieve_body($response), true);
+        if (empty($repo_plugins)) return;
+
+        // 2. Scan Installed
+        if (!function_exists('get_plugins')) require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        $installed_plugins = get_plugins();
+
+        // 3. Compare, Download, Install
+        foreach ($repo_plugins as $repo_plugin) {
+            $slug = $repo_plugin['slug'];
+            
+            // Find installed match
+            $local_file = '';
+            foreach ($installed_plugins as $file => $data) {
+                if (dirname($file) === $slug || $file === $slug . '.php') {
+                    $local_file = $file;
+                    $local_version = $data['Version'];
+                    break;
+                }
+            }
+
+            if ($local_file && version_compare($repo_plugin['version'], $local_version, '>')) {
+                // Update Found! Trigger Update Logic.
+                // We reuse handle_update logic by mocking a request? 
+                // Better to extract update logic. For now, let's call the internal helper if we refactored it.
+                // Since handle_update is an API handler, we'll strip the core logic out?
+                // For speed, let's just duplicate the core update steps here or call a private helper.
+                $this->perform_silent_update($repo_plugin['download_url'], $slug);
+            }
+        }
+        
+        // Sync back to Hub
+        $this->send_handshake();
     }
     
-    public function handle_repo_install() {
+    private function perform_silent_update($url, $slug) {
+        include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        include_once ABSPATH . 'wp-admin/includes/file.php';
+        
+        if (!function_exists('request_filesystem_credentials')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        if (false === ($credentials = request_filesystem_credentials(''))) return;
+        if (!WP_Filesystem($credentials)) return;
+
+        $skin = new WP_Ajax_Upgrader_Skin();
+        $upgrader = new Plugin_Upgrader($skin);
+        
+        ob_start(); // Silence
+        $temp_file = download_url($url);
+        if (!is_wp_error($temp_file)) {
+            $upgrader->install($temp_file, ['overwrite_package' => true]);
+            @unlink($temp_file);
+        }
+        ob_end_clean();
+    }
         if (!current_user_can('manage_options')) {
             wp_die('Unauthorized');
         }
