@@ -10,6 +10,11 @@ class ApiController {
     public function handshake() {
         $input = json_decode(file_get_contents('php://input'), true);
         
+        // Debug Logging
+        $logFile = __DIR__ . '/../../storage/api_debug.log';
+        $logEntry = date('Y-m-d H:i:s') . " - Handshake Request: " . print_r($input, true) . PHP_EOL;
+        file_put_contents($logFile, $logEntry, FILE_APPEND);
+
         if (!$input || !isset($input['url']) || !isset($input['public_key'])) {
             $this->jsonResponse(['error' => 'Invalid Payload'], 400);
             return;
