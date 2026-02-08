@@ -219,8 +219,32 @@ class Olu_Agent_Core {
              }
              activate_plugin($plugin_file);
         }
+        
+        // --- NEW: Trigger Handshake to refresh Hub Data ---
+        $this->send_handshake();
+        // --------------------------------------------------
 
         return new WP_REST_Response(['status' => 'success', 'message' => 'Plugin Updated'], 200);
+    }
+
+    public function send_handshake() {
+        $keys = get_option('olu_agent_keys', []);
+        if (empty($keys['public'])) return;
+
+        $plugins = $this->scan_plugins();
+        $hub_url = 'https://masterhub.olutek.com/api/v1/handshake';
+        
+        wp_remote_post($hub_url, [
+            'body' => json_encode([
+                'url' => get_site_url(),
+                'public_key' => $keys['public'],
+                'wp_version' => get_bloginfo('version'),
+                'plugins' => $plugins
+            ]),
+            'headers' => ['Content-Type' => 'application/json'],
+            'blocking' => false,
+            'timeout' => 5
+        ]);
     }
 
     public static function deactivate_agent() {

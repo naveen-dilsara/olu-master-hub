@@ -139,7 +139,7 @@ class SiteController {
 
             // Log activity
             $logFile = __DIR__ . '/../../storage/api_debug.log';
-            $msg = "Manual Dispatch [{$slug}] to [{$site['url']}]. Code: $httpCode";
+            $msg = "Manual Dispatch [{$slug}] to [{$site['url']}]. Code: $httpCode. Response: $response";
             file_put_contents($logFile, date('Y-m-d H:i:s') . " [Dispatcher] " . $msg . PHP_EOL, FILE_APPEND);
 
             header('Location: /sites/manage?id=' . $siteId);
