@@ -7,6 +7,7 @@ use Olu\Commander\Controllers\DashboardController;
 use Olu\Commander\Controllers\AuthController;
 use Olu\Commander\Controllers\SiteController;
 use Olu\Commander\Controllers\PluginController;
+use Olu\Commander\Controllers\SettingsController;
 use Olu\Commander\Api\ApiController;
 
 session_start();
