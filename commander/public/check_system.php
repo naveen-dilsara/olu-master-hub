@@ -27,7 +27,24 @@ foreach ($tables as $table) {
     }
 }
 
-// 3. Check Recent API Logs
+// 3. Check Storage Permissions
+$storageDir = __DIR__ . '/../storage';
+if (!is_dir($storageDir)) {
+    echo "\n[WARN] Storage directory missing. Attempting to create...\n";
+    @mkdir($storageDir, 0755, true);
+}
+
+if (is_writable($storageDir)) {
+    echo "[PASS] Storage directory is writable.\n";
+    file_put_contents($storageDir . '/test_write.txt', 'test');
+    unlink($storageDir . '/test_write.txt');
+} else {
+    echo "[FAIL] Storage directory is NOT writable. Check permissions for $storageDir\n";
+    // Try to get current user
+    echo "Current Web User: " . exec('whoami') . "\n";
+}
+
+// 4. Check Recent API Logs
 $logFile = __DIR__ . '/../storage/api_debug.log';
 if (file_exists($logFile)) {
     echo "\n=== Recent handshake.log (Last 2KB) ===\n";
