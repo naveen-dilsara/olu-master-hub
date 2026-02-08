@@ -28,6 +28,8 @@ add_action('admin_post_olu_agent_connect', ['Olu_Agent_Core', 'handle_manual_con
 
 // Activation Redirect
 register_activation_hook(__FILE__, 'olu_agent_activate_flag');
+register_deactivation_hook(__FILE__, ['Olu_Agent_Core', 'deactivate_agent']);
+
 function olu_agent_activate_flag() {
     add_option('olu_agent_do_activation_redirect', true);
 }

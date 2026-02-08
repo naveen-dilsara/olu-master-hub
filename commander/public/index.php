@@ -40,6 +40,10 @@ if ($path === '/logout') {
 // Public API Routes (No Auth Session Required)
 if ($path === '/api/v1/handshake') {
     (new ApiController())->handshake();
+} elseif ($path === '/api/v1/check-version') {
+    (new ApiController())->checkVersion();
+} elseif ($path === '/api/v1/disconnect') {
+    (new ApiController())->disconnect();
 }
 
 // Protected Routes Middleware

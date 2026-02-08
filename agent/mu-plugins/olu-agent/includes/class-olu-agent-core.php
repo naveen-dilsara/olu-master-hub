@@ -219,6 +219,27 @@ class Olu_Agent_Core {
 
         return new WP_REST_Response(['status' => 'success', 'message' => 'Plugin Updated'], 200);
     }
+
+    public static function deactivate_agent() {
+        $keys = get_option('olu_agent_keys', []);
+        if (empty($keys['public'])) {
+            return;
+        }
+
+        $hub_url = 'https://masterhub.olutek.com/api/v1/disconnect';
+        
+        wp_remote_post($hub_url, [
+            'body' => json_encode([
+                'url' => get_site_url(),
+                'public_key' => $keys['public']
+            ]),
+            'headers' => ['Content-Type' => 'application/json'],
+            'blocking' => false, // Don't block deactivation
+            'timeout' => 5
+        ]);
+        
+        delete_option('olu_agent_keys');
+    }
     
     // Admin UI Renderer
     public static function render_admin_page() {

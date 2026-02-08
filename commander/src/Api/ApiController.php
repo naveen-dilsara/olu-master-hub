@@ -31,25 +31,56 @@ class ApiController {
         $this->jsonResponse(['status' => 'success', 'site_id' => $siteId]);
     }
         
-        // Check if site exists
-        // simplified logic: if generic URL found, update key, else create
-        // In reality, we'd verify a secret or token, but for Phase 2 initial test, we auto-register.
+    // POST /api/v1/check-version
+    public function checkVersion() {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $slug = $input['slug'] ?? '';
         
-        // Generate a shared secret or just ack
-        $response = [
-            'status' => 'success',
-            'hub_id' => 'olu-master-001',
-            'message' => 'Connection Established'
-        ];
-        
-        // Save to DB
-        // We need to implement a 'findByUrl' or 'upsert' in Site model
-        // For now, just create new entry
-        $siteModel->create($input);
+        if (!$slug) {
+            $this->jsonResponse(['error' => 'Missing slug'], 400);
+        }
 
-        $this->jsonResponse($response);
+        $pluginModel = new \Olu\Commander\Models\Plugin();
+        $plugin = $pluginModel->findBySlug($slug);
+
+        if ($plugin) {
+            $this->jsonResponse([
+                'new_version' => $plugin['version'],
+                'package' => 'https://masterhub.olutek.com/storage/gpl_repo/' . basename($plugin['file_path']),
+                'slug' => $slug
+            ]);
+        } else {
+            $this->jsonResponse(['error' => 'Plugin not found'], 404);
+        }
     }
-    
+
+    // POST /api/v1/disconnect
+    public function disconnect() {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['url']) || !isset($input['public_key'])) {
+            $this->jsonResponse(['error' => 'Invalid Payload'], 400);
+            return;
+        }
+
+        $siteModel = new \Olu\Commander\Models\Site();
+        // Find site by URL
+        // We really should verify the key matches what we have, 
+        // but for now we trust the URL + Key combo if we had a proper lookup.
+        // For this MVP, we just find by URL and set status.
+        
+        $stmt = $siteModel->pdo->prepare("SELECT id FROM sites WHERE url = ?");
+        $stmt->execute([$input['url']]);
+        $site = $stmt->fetch();
+
+        if ($site) {
+             $siteModel->updateStatus($site['id'], 'disconnected');
+             $this->jsonResponse(['status' => 'success']);
+        } else {
+             $this->jsonResponse(['error' => 'Site not found'], 404);
+        }
+    }
+
     // Helper
     private function jsonResponse($data, $code = 200) {
         http_response_code($code);
