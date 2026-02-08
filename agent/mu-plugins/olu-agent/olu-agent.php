@@ -1,8 +1,7 @@
-<?php
 /**
  * Plugin Name: OLU Satellite Agent
- * Description: The hidden agent for OLU Master Hub. Handles remote updates.
- * Version: 1.0.0
+ * Description: Connects this site to the OLU Master Hub for remote management.
+ * Version: 2.0.0
  * Author: Olutek Digital
  * Text Domain: olu-agent
  */
@@ -11,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('OLU_AGENT_VERSION', '1.0.0');
+define('OLU_AGENT_VERSION', '2.0.0');
 define('OLU_AGENT_PATH', plugin_dir_path(__FILE__));
 define('OLU_AGENT_URL', plugin_dir_url(__FILE__));
 
@@ -23,10 +22,18 @@ function olu_agent_init() {
 }
 add_action('plugins_loaded', 'olu_agent_init');
 
-// Hide from plugin list (Stealth Mode)
-add_filter('all_plugins', function($plugins) {
-    if (is_admin() && !defined('DOING_AJAX')) {
-        unset($plugins[plugin_basename(__FILE__)]);
-    }
-    return $plugins;
+// Admin UI for Connection Management
+add_action('admin_menu', function() {
+    add_menu_page(
+        'OLU Agent', 
+        'OLU Agent', 
+        'manage_options', 
+        'olu-agent', 
+        ['Olu_Agent_Core', 'render_admin_page'], 
+        'dashicons-shield', 
+        99
+    );
 });
+
+// Handle Manual Connection Action
+add_action('admin_post_olu_agent_connect', ['Olu_Agent_Core', 'handle_manual_connect']);
