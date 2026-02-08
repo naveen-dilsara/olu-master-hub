@@ -92,7 +92,6 @@ class AutoUpdateService {
         curl_close($ch);
 
         return ($httpCode >= 200 && $httpCode < 300);
-        return ($httpCode >= 200 && $httpCode < 300);
     }
 
     public function processSiteHandshake($siteId, $plugins) {
