@@ -140,12 +140,6 @@ class Olu_Agent_Core {
         @file_put_contents($file, $entry, FILE_APPEND);
     }
     
-    private function log($msg) {
-        $file = WP_CONTENT_DIR . '/olu-agent-debug.log';
-        $entry = date('Y-m-d H:i:s') . " [OLU AGENT] " . $msg . PHP_EOL;
-        @file_put_contents($file, $entry, FILE_APPEND);
-    }
-    
     private function perform_silent_update($url, $slug) {
         include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         include_once ABSPATH . 'wp-admin/includes/file.php';
@@ -461,7 +455,7 @@ class Olu_Agent_Core {
             $all_plugins = get_plugins();
             $plugin_file = '';
 
-            // Exact match or folder match
+            // Exact match or folder match (Enhanced to support self-update if slug=olu-agent)
             foreach ($all_plugins as $file => $data) {
                 if ($file === $slug . '.php' || dirname($file) === $slug) {
                     $plugin_file = $file;
