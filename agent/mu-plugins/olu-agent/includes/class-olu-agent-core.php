@@ -34,6 +34,72 @@ class Olu_Agent_Core {
         
         // Agent Self-Update Check
         add_filter('pre_set_site_transient_update_plugins', [$this, 'check_for_updates']);
+        
+        // Handle Repo Install
+        add_action('admin_post_olu_agent_install', [$this, 'handle_repo_install']);
+    }
+    
+    public function handle_repo_install() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+        
+        check_admin_referer('olu_agent_install', 'nonce');
+        
+        $url = $_POST['download_url'] ?? '';
+        $slug = $_POST['slug'] ?? '';
+        
+        if (empty($url)) {
+            wp_redirect(admin_url('admin.php?page=olu-agent-repo&error=Missing URL'));
+            exit;
+        }
+
+        // Reuse Logic: Create a Mock Request to feed into handle_update
+        // But handle_update expects a JSON request object. 
+        // Let's copy the logic or refactor. Copying for safety now.
+        
+        include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        include_once ABSPATH . 'wp-admin/includes/file.php';
+        
+        if (!function_exists('request_filesystem_credentials')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        WP_Filesystem();
+        global $wp_filesystem;
+        
+        $temp_file = download_url($url);
+        if (is_wp_error($temp_file)) {
+            wp_redirect(admin_url('admin.php?page=olu-agent-repo&error=' . urlencode($temp_file->get_error_message())));
+            exit;
+        }
+        
+        $skin = new WP_Ajax_Upgrader_Skin(); // Or WP_Upgrader_Skin for visible output but manual redirect
+        // Ideally we want to see output. But let's keep it simple: silent install & redirect.
+        
+        $upgrader = new Plugin_Upgrader($skin);
+        $result = $upgrader->install($temp_file, ['overwrite_package' => true]);
+        @unlink($temp_file);
+
+        if (is_wp_error($result)) {
+            wp_redirect(admin_url('admin.php?page=olu-agent-repo&error=' . urlencode($result->get_error_message())));
+            exit;
+        }
+
+        // Activate
+        $plugin_file = $slug . '/' . $slug . '.php'; 
+        // Scan for real file
+        $installed = get_plugins('/' . $slug);
+        if (!empty($installed)) {
+             $plugin_file = $slug . '/' . key($installed);
+        }
+        activate_plugin($plugin_file);
+        
+        // Refresh Hub
+        $this->send_handshake();
+
+        wp_redirect(admin_url('admin.php?page=olu-agent-repo&status=success'));
+        exit;
     }
     
     public function check_for_updates($transient) {
@@ -80,13 +146,70 @@ class Olu_Agent_Core {
             [$this, 'render_admin_page'], 
             'dashicons-shield', 
             2
-        ); // Position 2 (near Dashboard)
+        );
+        
+        add_submenu_page(
+            'olu-agent',
+            'Plugin Repository',
+            'Repository',
+            'manage_options',
+            'olu-agent-repo',
+            [$this, 'render_repo_page']
+        );
     }
 
     public function admin_notices() {
-        if (isset($_GET['page']) && $_GET['page'] === 'olu-agent' && isset($_GET['status']) && $_GET['status'] === 'success') {
-            echo '<div class="notice notice-success is-dismissible"><p><strong>Success!</strong> Connected to OLU Master Hub.</p></div>';
+        if (isset($_GET['page']) && ($_GET['page'] === 'olu-agent' || $_GET['page'] === 'olu-agent-repo')) {
+            if (isset($_GET['status']) && $_GET['status'] === 'success') {
+                 echo '<div class="notice notice-success is-dismissible"><p><strong>Success!</strong> Operation completed successfully.</p></div>';
+            }
+            if (isset($_GET['error'])) {
+                 echo '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> ' . esc_html($_GET['error']) . '</p></div>';
+            }
         }
+    }
+
+    public function render_repo_page() {
+        // Fetch Plugins from Hub
+        $hub_url = 'https://masterhub.olutek.com/api/v1/repo';
+        $response = wp_remote_get($hub_url, ['timeout' => 10]);
+        
+        $plugins = [];
+        if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
+            $plugins = json_decode(wp_remote_retrieve_body($response), true);
+        } else {
+            echo '<div class="notice notice-error"><p>Failed to fetch repository data from Master Hub.</p></div>';
+        }
+
+        ?>
+        <div class="wrap">
+            <h1>OLU Plugin Repository</h1>
+            <p>Install plugins directly from the Master Hub.</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                <?php if (empty($plugins)): ?>
+                    <p>No plugins available in the repository.</p>
+                <?php else: ?>
+                    <?php foreach ($plugins as $plugin): ?>
+                        <div class="card" style="padding: 20px; border: 1px solid #ccd0d4; background: #fff;">
+                            <h2 style="margin-top: 0;"><?php echo esc_html($plugin['name']); ?></h2>
+                            <p style="color: #666;">Version: <?php echo esc_html($plugin['version']); ?></p>
+                            <p><?php echo esc_html($plugin['description'] ?? 'No description available.'); ?></p>
+                            
+                            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+                                <input type="hidden" name="action" value="olu_agent_install">
+                                <input type="hidden" name="slug" value="<?php echo esc_attr($plugin['slug']); ?>">
+                                <input type="hidden" name="download_url" value="<?php echo esc_attr($plugin['download_url']); ?>">
+                                <?php wp_nonce_field('olu_agent_install', 'nonce'); ?>
+                                
+                                <button type="submit" class="button button-primary">Install Now</button>
+                            </form>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
     }
 
     public function activate_agent() {

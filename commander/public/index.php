@@ -46,6 +46,10 @@ if ($path === '/api/v1/handshake') {
     (new ApiController())->disconnect();
 } elseif ($path === '/api/v1/download') {
     (new ApiController())->download();
+} elseif ($path === '/api/v1/download') {
+    (new ApiController())->download();
+} elseif ($path === '/api/v1/repo') {
+    (new ApiController())->listRepo();
 }
 
 // Protected Routes Middleware

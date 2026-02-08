@@ -60,6 +60,24 @@ class ApiController {
         }
     }
 
+    // GET /api/v1/repo
+    public function listRepo() {
+        $pluginModel = new \Olu\Commander\Models\Plugin();
+        $plugins = $pluginModel->getAll();
+        
+        $response = array_map(function($p) {
+            return [
+                'name' => $p['name'],
+                'slug' => $p['slug'],
+                'version' => $p['version'],
+                'description' => $p['description'], // Assuming description exists or is added
+                'download_url' => 'https://masterhub.olutek.com/api/v1/download?file=' . basename($p['file_path'])
+            ];
+        }, $plugins);
+
+        $this->jsonResponse($response);
+    }
+
     // GET /api/v1/download?file=filename.zip
     public function download() {
         $file = $_GET['file'] ?? '';
