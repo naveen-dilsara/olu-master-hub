@@ -66,6 +66,8 @@ if ($path === '/' || $path === '/index.php') {
     (new SiteController())->activate();
 } elseif ($path === '/sites/manage') {
     (new SiteController())->manage();
+} elseif ($path === '/sites/dispatch') {
+    (new SiteController())->dispatch();
 } elseif ($path === '/plugins') {
     (new PluginController())->index();
 } elseif ($path === '/plugins/upload') {
