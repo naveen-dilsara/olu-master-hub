@@ -22,6 +22,14 @@ foreach ($tables as $table) {
         $stmt = $pdo->query("SELECT COUNT(*) FROM $table");
         $count = $stmt->fetchColumn();
         echo "[PASS] Table '$table' exists. Rows: $count\n";
+        
+        if ($table === 'plugins' && $count > 0) {
+            echo "--- CONTENT of 'plugins' ---\n";
+            $rows = $pdo->query("SELECT * FROM plugins")->fetchAll(PDO::FETCH_ASSOC);
+            print_r($rows);
+            echo "----------------------------\n";
+        }
+
     } catch (Exception $e) {
         echo "[FAIL] Table '$table' MISSING or Error: " . $e->getMessage() . "\n";
     }
