@@ -18,24 +18,28 @@ class Plugin {
     }
 
     public function create($data) {
-        $sql = "INSERT INTO plugins (slug, name, version, file_path, file_hash, updated_at) VALUES (?, ?, ?, ?, ?, datetime('now'))";
+        $now = date('Y-m-d H:i:s');
+        $sql = "INSERT INTO plugins (slug, name, version, file_path, file_hash, updated_at) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             $data['slug'],
             $data['name'],
             $data['version'],
             $data['file_path'],
-            $data['file_hash']
+            $data['file_hash'],
+            $now
         ]);
     }
     
     public function update($slug, $data) {
-        $sql = "UPDATE plugins SET version = ?, file_path = ?, file_hash = ?, updated_at = datetime('now') WHERE slug = ?";
+        $now = date('Y-m-d H:i:s');
+        $sql = "UPDATE plugins SET version = ?, file_path = ?, file_hash = ?, updated_at = ? WHERE slug = ?";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute([
             $data['version'],
             $data['file_path'],
             $data['file_hash'],
+            $now,
             $slug
         ]);
     }
