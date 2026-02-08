@@ -55,10 +55,10 @@ if (is_writable($storageDir)) {
 // 4. Check Recent API Logs
 $logFile = __DIR__ . '/../storage/api_debug.log';
 if (file_exists($logFile)) {
-    echo "\n=== Recent handshake.log (Last 2KB) ===\n";
+    echo "\n=== Recent handshake.log (Last 20KB) ===\n";
     echo "Path: $logFile\n";
     $content = file_get_contents($logFile);
-    echo substr($content, -2000) . "\n"; 
+    echo substr($content, -20480) . "\n"; 
 } else {
     echo "\n[WARN] No API log file found at $logFile\n";
 }

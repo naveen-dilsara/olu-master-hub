@@ -60,39 +60,6 @@ class AutoUpdateService {
         return ['status' => 'completed', 'results' => $results];
     }
 
-    private function pushUpdateToSite($site, $slug, $url, $version) {
-        $endpoint = rtrim($site['url'], '/') . '/wp-json/olu/v1/update';
-        
-        $body = [
-            'slug' => $slug,
-            'download_url' => $url,
-            'version' => $version,
-            'activate' => true,
-            'signature' => 'TODO_SIGNATURE' 
-        ];
-
-        $args = [
-            'body' => json_encode($body),
-            'headers' => [
-                'Content-Type' => 'application/json'
-            ],
-            'timeout' => 45,
-            'blocking' => true
-        ];
-
-        // Using curl if WP functions not available (Standalone PHP)
-        $ch = curl_init($endpoint);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return ($httpCode >= 200 && $httpCode < 300);
-    }
 
     public function processSiteHandshake($siteId, $plugins) {
         $site = $this->siteModel->find($siteId);
