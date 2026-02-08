@@ -25,9 +25,9 @@ class Site {
 
     public function create($data) {
         $now = date('Y-m-d H:i:s');
-        $sql = "INSERT INTO sites (url, public_key, status, wp_version, created_at) VALUES (?, ?, 'connected', ?, ?)";
+        $sql = "INSERT INTO sites (url, public_key, status, wp_version, created_at, last_heartbeat) VALUES (?, ?, 'connected', ?, ?, ?)";
         $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$data['url'], $data['public_key'], $data['wp_version'], $now]);
+        return $stmt->execute([$data['url'], $data['public_key'], $data['wp_version'], $now, $now]);
     }
 
     public function updateStatus($id, $status) {
