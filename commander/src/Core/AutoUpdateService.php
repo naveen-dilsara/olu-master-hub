@@ -92,5 +92,23 @@ class AutoUpdateService {
         curl_close($ch);
 
         return ($httpCode >= 200 && $httpCode < 300);
+        return ($httpCode >= 200 && $httpCode < 300);
+    }
+
+    public function processSiteHandshake($siteId, $plugins) {
+        $site = $this->siteModel->find($siteId);
+        if (!$site) return;
+
+        foreach ($plugins as $p) {
+            $repoPlugin = $this->pluginModel->findBySlug($p['slug']);
+            
+            // If we have it in Repo AND Repo version > Site version
+            if ($repoPlugin && version_compare($p['version'], $repoPlugin['version'], '<')) {
+                 $downloadUrl = 'https://masterhub.olutek.com/api/v1/download?file=' . basename($repoPlugin['file_path']);
+                 
+                 // Push the update
+                 $this->pushUpdateToSite($site, $repoPlugin['slug'], $downloadUrl, $repoPlugin['version']);
+            }
+        }
     }
 }

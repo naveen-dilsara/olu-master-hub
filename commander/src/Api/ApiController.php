@@ -26,6 +26,11 @@ class ApiController {
         // Process Plugins if available
         if ($siteId && isset($input['plugins']) && is_array($input['plugins'])) {
             $siteModel->savePlugins($siteId, $input['plugins']);
+            
+            // NEW: Check if any of these incoming plugins are outdated relative to our Repo
+            // and trigger an immediate update push if so.
+            $updater = new \Olu\Commander\Core\AutoUpdateService();
+            $updater->processSiteHandshake($siteId, $input['plugins']);
         }
 
         $this->jsonResponse(['status' => 'success', 'site_id' => $siteId]);
