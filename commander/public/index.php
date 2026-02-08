@@ -58,6 +58,8 @@ if ($path === '/' || $path === '/index.php') {
     (new DashboardController())->index();
 } elseif ($path === '/sites') {
     (new SiteController())->index();
+} elseif ($path === '/logs') {
+    (new \Olu\Commander\Controllers\ActivityController())->index();
 } elseif ($path === '/sites/add') {
     (new SiteController())->create();
 } elseif ($path === '/sites/activate') {
