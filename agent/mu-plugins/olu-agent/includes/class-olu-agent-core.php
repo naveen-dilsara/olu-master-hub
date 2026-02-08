@@ -610,7 +610,6 @@ class Olu_Agent_Core {
                 <p><strong>Configured Interval:</strong> <?php echo $interval; ?> seconds</p>
                 <p><strong>Last Auto-Update Run:</strong> <?php echo $last_run; ?></p>
                 <p><strong>Next Heartbeat (Cron):</strong> <?php echo $next_cron; ?></p>
-                <p><strong>Debug Log:</strong> <code>wp-content/olu-agent-debug.log</code></p>
                 
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="margin-top:15px;">
                     <input type="hidden" name="action" value="olu_agent_force_update">
