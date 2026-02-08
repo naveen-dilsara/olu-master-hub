@@ -22,18 +22,22 @@ function olu_agent_init() {
 }
 add_action('plugins_loaded', 'olu_agent_init');
 
-// Admin UI for Connection Management
-add_action('admin_menu', function() {
-    add_menu_page(
-        'OLU Agent', 
-        'OLU Agent', 
-        'manage_options', 
-        'olu-agent', 
-        ['Olu_Agent_Core', 'render_admin_page'], 
-        'dashicons-shield', 
-        99
-    );
-});
-
 // Handle Manual Connection Action
 add_action('admin_post_olu_agent_connect', ['Olu_Agent_Core', 'handle_manual_connect']);
+
+// Activation Redirect
+register_activation_hook(__FILE__, 'olu_agent_activate_flag');
+function olu_agent_activate_flag() {
+    add_option('olu_agent_do_activation_redirect', true);
+}
+
+add_action('admin_init', 'olu_agent_redirect');
+function olu_agent_redirect() {
+    if (get_option('olu_agent_do_activation_redirect', false)) {
+        delete_option('olu_agent_do_activation_redirect');
+        if(!isset($_GET['activate-multi'])) {
+            wp_redirect(admin_url('admin.php?page=olu-agent'));
+            exit;
+        }
+    }
+}
