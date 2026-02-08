@@ -35,7 +35,12 @@
                     </td>
                     <td style="padding: 1rem;"><?= $plugin['updated_at'] ?></td>
                     <td style="padding: 1rem;">
-                        <button style="background: none; border: 1px solid var(--color-bg-hover); color: var(--color-text-muted); padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer;">Deploy</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <form method="post" action="/plugins/delete" onsubmit="return confirm('Start Protocol: DELETE?');">
+                                <input type="hidden" name="id" value="<?= $plugin['id'] ?>">
+                                <button type="submit" style="background: none; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer;">Delete</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>

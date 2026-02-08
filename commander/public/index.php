@@ -68,6 +68,8 @@ if ($path === '/' || $path === '/index.php') {
     (new PluginController())->index();
 } elseif ($path === '/plugins/upload') {
     (new PluginController())->upload();
+} elseif ($path === '/plugins/delete') {
+    (new PluginController())->delete();
 } else {
     http_response_code(404);
     echo "<h1>404 Not Found</h1>";
