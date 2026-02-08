@@ -151,7 +151,7 @@ class Olu_Agent_Core {
         if (false === ($credentials = request_filesystem_credentials(''))) return;
         if (!WP_Filesystem($credentials)) return;
 
-        $skin = new WP_Ajax_Upgrader_Skin();
+        $skin = new WP_Upgrader_Skin();
         $upgrader = new Plugin_Upgrader($skin);
         
         ob_start(); // Silence
@@ -427,7 +427,7 @@ class Olu_Agent_Core {
             return new WP_REST_Response(['status' => 'error', 'message' => 'Filesystem initialization failed'], 500);
         }
 
-        $skin = new WP_Ajax_Upgrader_Skin();
+        $skin = new WP_Upgrader_Skin();
         $upgrader = new Plugin_Upgrader($skin);
 
         // Capture output to prevent breaking JSON response
