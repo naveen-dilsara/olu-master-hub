@@ -31,6 +31,44 @@ class Olu_Agent_Core {
         
         // Success Notice on Connection
         add_action('admin_notices', [$this, 'admin_notices']);
+        
+        // Agent Self-Update Check
+        add_filter('pre_set_site_transient_update_plugins', [$this, 'check_for_updates']);
+    }
+    
+    public function check_for_updates($transient) {
+        if (empty($transient->checked)) {
+            return $transient;
+        }
+
+        $hub_url = 'https://masterhub.olutek.com/api/v1/check-version';
+        $plugin_slug = 'olu-agent';
+        $plugin_file = 'olu-agent/olu-agent.php';
+        
+        // Check Master Hub
+        $response = wp_remote_post($hub_url, [
+            'body' => json_encode(['slug' => $plugin_slug]),
+            'headers' => ['Content-Type' => 'application/json'],
+            'timeout' => 5
+        ]);
+
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) != 200) {
+            return $transient;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        
+        if (isset($body['new_version']) && version_compare($body['new_version'], OLU_AGENT_VERSION, '>')) {
+            $obj = new stdClass();
+            $obj->slug = $plugin_slug;
+            $obj->new_version = $body['new_version'];
+            $obj->url = 'https://masterhub.olutek.com';
+            $obj->package = $body['package']; // The ZIP url
+            
+            $transient->response[$plugin_file] = $obj;
+        }
+
+        return $transient;
     }
 
     public function add_admin_menu() {
@@ -60,7 +98,9 @@ class Olu_Agent_Core {
         
         update_option('olu_agent_keys', $keys);
         
-        // Send Handshake to Master Hub
+        // Scan Plugins
+        $plugins = $this->scan_plugins();
+
         // Send Handshake to Master Hub
         $hub_url = 'https://masterhub.olutek.com/api/v1/handshake';
         
@@ -68,11 +108,38 @@ class Olu_Agent_Core {
             'body' => json_encode([
                 'url' => get_site_url(),
                 'public_key' => $keys['public'],
-                'wp_version' => get_bloginfo('version')
+                'wp_version' => get_bloginfo('version'),
+                'plugins' => $plugins
             ]),
             'headers' => ['Content-Type' => 'application/json'],
             'blocking' => false // Don't block activation
         ]);
+    }
+
+    private function scan_plugins() {
+        if (!function_exists('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        
+        $all_plugins = get_plugins();
+        $active_plugins = get_option('active_plugins');
+        
+        $formatted = [];
+        foreach ($all_plugins as $path => $data) {
+            $slug = dirname($path);
+            if ($slug === '.') {
+                $slug = basename($path, '.php');
+            }
+            
+            $formatted[] = [
+                'name' => $data['Name'],
+                'slug' => $slug,
+                'version' => $data['Version'],
+                'is_active' => in_array($path, $active_plugins)
+            ];
+        }
+        
+        return $formatted;
     }
 
     public function register_routes() {
@@ -94,8 +161,63 @@ class Olu_Agent_Core {
     }
 
     public function handle_update($request) {
-        // Todo: Verify Signature
-        return new WP_REST_Response(['status' => 'pending', 'message' => 'Update Queued'], 200);
+        $params = $request->get_json_params();
+        
+        if (empty($params['download_url']) || empty($params['slug'])) {
+            return new WP_REST_Response(['status' => 'error', 'message' => 'Missing parameters'], 400);
+        }
+
+        $url = $params['download_url'];
+        $slug = $params['slug'];
+        
+        // Security: Verify Signature (TODO: Add RSA verification)
+        // For now, we rely on the secret being established or just open for this demo phase
+
+        include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        include_once ABSPATH . 'wp-admin/includes/file.php';
+        
+        if (!function_exists('request_filesystem_credentials')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        WP_Filesystem();
+        global $wp_filesystem;
+
+        // 1. Download
+        $temp_file = download_url($url);
+        if (is_wp_error($temp_file)) {
+            return new WP_REST_Response(['status' => 'error', 'message' => $temp_file->get_error_message()], 500);
+        }
+
+        // 2. Unzip
+        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug; // simplified assumption: slug matches folder
+        // Better: Use Plugin_Upgrader which handles overwrites safely
+        
+        $skin = new WP_Ajax_Upgrader_Skin();
+        $upgrader = new Plugin_Upgrader($skin);
+        
+        // We simulate an upload or overwrite
+        // Just unzipping might be cleaner for custom force updates
+        $result = $upgrader->install($temp_file, ['overwrite_package' => true]);
+
+        unlink($temp_file);
+
+        if (is_wp_error($result)) {
+            return new WP_REST_Response(['status' => 'error', 'message' => $result->get_error_message()], 500);
+        }
+        
+        // 3. Activate (if requested)
+        if (!empty($params['activate']) && $params['activate']) {
+             $plugin_file = $slug . '/' . $slug . '.php'; // Guessing main file. 
+             // Ideally we scan the folder for the plugin header
+             $installed_plugins = get_plugins('/' . $slug);
+             if (!empty($installed_plugins)) {
+                 $plugin_file = $slug . '/' . key($installed_plugins);
+                 activate_plugin($plugin_file);
+             }
+        }
+
+        return new WP_REST_Response(['status' => 'success', 'message' => 'Plugin Updated'], 200);
     }
     
     // Admin UI Renderer
@@ -145,9 +267,42 @@ class Olu_Agent_Core {
         check_admin_referer('olu_agent_connect_action', 'olu_agent_nonce');
         
         $instance = self::instance();
-        $instance->activate_agent(); // Re-run the handshake logic
         
-        // Add success notice (simple redirect with param for now)
+        // Manual Activation - BLOCKING for debug
+        $keys = [
+            'public' => 'MOCK_PUBLIC_KEY_' . time(),
+            'private' => 'MOCK_PRIVATE_KEY_' . time()
+        ];
+        update_option('olu_agent_keys', $keys);
+        
+        $plugins = $instance->scan_plugins();
+        
+        $hub_url = 'https://masterhub.olutek.com/api/v1/handshake';
+        
+        $response = wp_remote_post($hub_url, [
+            'body' => json_encode([
+                'url' => get_site_url(),
+                'public_key' => $keys['public'],
+                'wp_version' => get_bloginfo('version'),
+                'plugins' => $plugins
+            ]),
+            'headers' => ['Content-Type' => 'application/json'],
+            'blocking' => true, // BLOCKING to see error
+            'timeout' => 15
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_die('Connection Failed: ' . $response->get_error_message());
+        }
+        
+        $code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        if ($code !== 200) {
+            wp_die("Server Error ($code): " . $body);
+        }
+
+        // Add success notice
         wp_redirect(admin_url('admin.php?page=olu-agent&status=success'));
         exit;
     }
