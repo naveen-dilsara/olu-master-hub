@@ -87,7 +87,7 @@
 
             <form method="POST" action="/login">
                 <div class="form-group">
-                    <label class="form-label">Username</label>
+                    <label class="form-label">Email / Username</label>
                     <input type="text" name="username" class="form-input" required autofocus>
                 </div>
                 <div class="form-group">

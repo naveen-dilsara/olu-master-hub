@@ -281,16 +281,22 @@ class Olu_Agent_Core {
         include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         include_once ABSPATH . 'wp-admin/includes/file.php';
         include_once ABSPATH . 'wp-admin/includes/plugin.php';
-        
-        if (!function_exists('request_filesystem_credentials')) {
-            require_once ABSPATH . 'wp-admin/includes/file.php';
+        include_once ABSPATH . 'wp-admin/includes/misc.php'; // For save_mod_rewrite_rules if needed
+
+        // Initialize Filesystem
+        if (false === ($credentials = request_filesystem_credentials(''))) {
+            return new WP_REST_Response(['status' => 'error', 'message' => 'Filesystem credentials required'], 500);
         }
 
-        WP_Filesystem();
-        global $wp_filesystem;
-        
+        if (!WP_Filesystem($credentials)) {
+            return new WP_REST_Response(['status' => 'error', 'message' => 'Filesystem initialization failed'], 500);
+        }
+
         $skin = new WP_Ajax_Upgrader_Skin();
         $upgrader = new Plugin_Upgrader($skin);
+
+        // Capture output to prevent breaking JSON response
+        ob_start();
 
         // Case 1: Custom/GPL Update (with URL)
         if (!empty($params['download_url'])) {
@@ -298,6 +304,7 @@ class Olu_Agent_Core {
             $temp_file = download_url($url);
             
             if (is_wp_error($temp_file)) {
+                ob_end_clean();
                 return new WP_REST_Response(['status' => 'error', 'message' => $temp_file->get_error_message()], 500);
             }
 
@@ -305,35 +312,63 @@ class Olu_Agent_Core {
             @unlink($temp_file);
 
         } else {
-            // Case 2: Standard WP Update (No URL provided)
-            // Need to find the plugin file path from slug
-            $plugins = get_plugins();
+            // Case 2: Standard WP Update via Repository
+            // ... (Search logic matches previous) ...
+            if (!function_exists('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+            $all_plugins = get_plugins();
             $plugin_file = '';
-            foreach ($plugins as $file => $data) {
-                if (dirname($file) === $slug || $file === $slug . '.php') {
+
+            // Exact match or folder match
+            foreach ($all_plugins as $file => $data) {
+                if ($file === $slug . '.php' || dirname($file) === $slug) {
                     $plugin_file = $file;
                     break;
                 }
             }
 
             if (!$plugin_file) {
-                return new WP_REST_Response(['status' => 'error', 'message' => 'Plugin not found for slug: ' . $slug], 404);
+                // Try searching via Text Domain as fallback
+                foreach ($all_plugins as $file => $data) {
+                    if (isset($data['TextDomain']) && $data['TextDomain'] === $slug) {
+                        $plugin_file = $file;
+                        break;
+                    }
+                }
             }
-            
-            // Ensure WP knows about the update
+
+            if (!$plugin_file) {
+                 ob_end_clean();
+                 return new WP_REST_Response(['status' => 'error', 'message' => "Plugin file not found for slug: $slug"], 404);
+            }
+
+            // 2. Force WP to check for updates
+            delete_site_transient('update_plugins');
             wp_update_plugins();
             
+            // 3. Perform Upgrade
             $result = $upgrader->upgrade($plugin_file);
         }
 
+        $output = ob_get_clean(); // Discard output or log if needed
+        // file_put_contents(WP_CONTENT_DIR . '/olu-update.log', $output); // Debugging
+
         if (is_wp_error($result)) {
-            return new WP_REST_Response(['status' => 'error', 'message' => 'Update Failed: ' . $result->get_error_message()], 500);
+            return new WP_REST_Response(['status' => 'error', 'message' => 'Update Logic Failed: ' . $result->get_error_message()], 500);
+        }
+        
+        // If result is false/null...
+        if (!$result) {
+             return new WP_REST_Response([
+                 'status' => 'warning', 
+                 'message' => 'No update performed. System returned false. Log: ' . substr(strip_tags($output), 0, 200)
+             ], 200);
         }
         
         // Activate if requested
         if (!empty($params['activate']) && $params['activate']) {
              if (empty($plugin_file)) {
-                 // Try to guess again if it was a zip install
                  $plugin_file = $slug . '/' . $slug . '.php'; 
                  $installed = get_plugins('/' . $slug);
                  if (!empty($installed)) {
@@ -347,7 +382,7 @@ class Olu_Agent_Core {
         $this->send_handshake();
         // --------------------------------------------------
 
-        return new WP_REST_Response(['status' => 'success', 'message' => 'Plugin Updated'], 200);
+        return new WP_REST_Response(['status' => 'success', 'message' => 'Plugin Updated Successfully'], 200);
     }
 
     public function send_handshake() {
