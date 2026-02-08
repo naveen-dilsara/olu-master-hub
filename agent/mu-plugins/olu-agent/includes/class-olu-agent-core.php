@@ -124,6 +124,10 @@ class Olu_Agent_Core {
         $all_plugins = get_plugins();
         $active_plugins = get_option('active_plugins');
         
+        // Force check for updates (lite check)
+        wp_update_plugins();
+        $update_transient = get_site_transient('update_plugins');
+
         $formatted = [];
         foreach ($all_plugins as $path => $data) {
             $slug = dirname($path);
@@ -135,46 +139,25 @@ class Olu_Agent_Core {
                 'name' => $data['Name'],
                 'slug' => $slug,
                 'version' => $data['Version'],
-                'is_active' => in_array($path, $active_plugins)
+                'is_active' => in_array($path, $active_plugins),
+                'has_update' => isset($update_transient->response[$path])
             ];
         }
         
         return $formatted;
     }
 
-    public function register_routes() {
-        register_rest_route('olu/v1', '/handshake', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_handshake'],
-            'permission_callback' => '__return_true', // Validation happens inside via signature
-        ]);
-        
-        register_rest_route('olu/v1', '/update', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_update'],
-            'permission_callback' => '__return_true',
-        ]);
-    }
-
-    public function handle_handshake($request) {
-        return new WP_REST_Response(['status' => 'success', 'message' => 'Agent Ready'], 200);
-    }
-
     public function handle_update($request) {
         $params = $request->get_json_params();
+        $slug = $params['slug'] ?? '';
         
-        if (empty($params['download_url']) || empty($params['slug'])) {
-            return new WP_REST_Response(['status' => 'error', 'message' => 'Missing parameters'], 400);
+        if (empty($slug)) {
+            return new WP_REST_Response(['status' => 'error', 'message' => 'Missing plugin slug'], 400);
         }
-
-        $url = $params['download_url'];
-        $slug = $params['slug'];
-        
-        // Security: Verify Signature (TODO: Add RSA verification)
-        // For now, we rely on the secret being established or just open for this demo phase
 
         include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         include_once ABSPATH . 'wp-admin/includes/file.php';
+        include_once ABSPATH . 'wp-admin/includes/plugin.php';
         
         if (!function_exists('request_filesystem_credentials')) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -182,39 +165,59 @@ class Olu_Agent_Core {
 
         WP_Filesystem();
         global $wp_filesystem;
-
-        // 1. Download
-        $temp_file = download_url($url);
-        if (is_wp_error($temp_file)) {
-            return new WP_REST_Response(['status' => 'error', 'message' => $temp_file->get_error_message()], 500);
-        }
-
-        // 2. Unzip
-        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug; // simplified assumption: slug matches folder
-        // Better: Use Plugin_Upgrader which handles overwrites safely
         
         $skin = new WP_Ajax_Upgrader_Skin();
         $upgrader = new Plugin_Upgrader($skin);
-        
-        // We simulate an upload or overwrite
-        // Just unzipping might be cleaner for custom force updates
-        $result = $upgrader->install($temp_file, ['overwrite_package' => true]);
 
-        unlink($temp_file);
+        // Case 1: Custom/GPL Update (with URL)
+        if (!empty($params['download_url'])) {
+            $url = $params['download_url'];
+            $temp_file = download_url($url);
+            
+            if (is_wp_error($temp_file)) {
+                return new WP_REST_Response(['status' => 'error', 'message' => $temp_file->get_error_message()], 500);
+            }
+
+            $result = $upgrader->install($temp_file, ['overwrite_package' => true]);
+            @unlink($temp_file);
+
+        } else {
+            // Case 2: Standard WP Update (No URL provided)
+            // Need to find the plugin file path from slug
+            $plugins = get_plugins();
+            $plugin_file = '';
+            foreach ($plugins as $file => $data) {
+                if (dirname($file) === $slug || $file === $slug . '.php') {
+                    $plugin_file = $file;
+                    break;
+                }
+            }
+
+            if (!$plugin_file) {
+                return new WP_REST_Response(['status' => 'error', 'message' => 'Plugin not found for slug: ' . $slug], 404);
+            }
+            
+            // Ensure WP knows about the update
+            wp_update_plugins();
+            
+            $result = $upgrader->upgrade($plugin_file);
+        }
 
         if (is_wp_error($result)) {
-            return new WP_REST_Response(['status' => 'error', 'message' => $result->get_error_message()], 500);
+            return new WP_REST_Response(['status' => 'error', 'message' => 'Update Failed: ' . $result->get_error_message()], 500);
         }
         
-        // 3. Activate (if requested)
+        // Activate if requested
         if (!empty($params['activate']) && $params['activate']) {
-             $plugin_file = $slug . '/' . $slug . '.php'; // Guessing main file. 
-             // Ideally we scan the folder for the plugin header
-             $installed_plugins = get_plugins('/' . $slug);
-             if (!empty($installed_plugins)) {
-                 $plugin_file = $slug . '/' . key($installed_plugins);
-                 activate_plugin($plugin_file);
+             if (empty($plugin_file)) {
+                 // Try to guess again if it was a zip install
+                 $plugin_file = $slug . '/' . $slug . '.php'; 
+                 $installed = get_plugins('/' . $slug);
+                 if (!empty($installed)) {
+                     $plugin_file = $slug . '/' . key($installed);
+                 }
              }
+             activate_plugin($plugin_file);
         }
 
         return new WP_REST_Response(['status' => 'success', 'message' => 'Plugin Updated'], 200);
