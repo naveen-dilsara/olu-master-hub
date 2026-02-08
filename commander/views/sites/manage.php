@@ -86,6 +86,38 @@
         </div>
         
         <div class="card">
+             <h3>⚙️ Agent Settings</h3>
+             <form method="POST" action="/sites/config">
+                 <input type="hidden" name="site_id" value="<?= $site['id'] ?>">
+                 
+                 <label style="display:block; margin-bottom:0.5rem; color:var(--color-text-muted);">Auto-Update GPL Plugins</label>
+                 <select name="update_interval" style="width: 100%; padding: 0.75rem; background-color: var(--color-bg-dark); border: 1px solid var(--color-bg-hover); border-radius: var(--radius-md); color: var(--color-text-main); margin-bottom: 1rem;">
+                     <?php 
+                     $current = $site['update_interval'] ?? 86400; 
+                     $options = [
+                         60 => 'Every 1 Minute',
+                         300 => 'Every 5 Minutes',
+                         1800 => 'Every 30 Minutes',
+                         7200 => 'Every 2 Hours',
+                         86400 => 'Every 1 Day',
+                         604800 => 'Every 7 Days',
+                         1209600 => 'Every 14 Days',
+                         2592000 => 'Every 30 Days'
+                     ];
+                     foreach($options as $val => $label): 
+                         $selected = ($current == $val) ? 'selected' : '';
+                     ?>
+                         <option value="<?= $val ?>" <?= $selected ?>><?= $label ?></option>
+                     <?php endforeach; ?>
+                 </select>
+                 
+                 <button type="submit" style="width: 100%; padding: 0.75rem; background-color: var(--color-bg-hover); color: var(--color-primary); border: 1px solid var(--color-primary); border-radius: var(--radius-md); cursor: pointer;">
+                     Save Configuration
+                 </button>
+             </form>
+        </div>
+
+        <div class="card">
              <h3>Actions</h3>
              <button style="width: 100%; padding: 0.75rem; background-color: var(--color-bg-hover); color: var(--color-danger); border: 1px solid var(--color-danger); border-radius: var(--radius-md); cursor: pointer; margin-bottom: 0.5rem;">
                  Unlink Site
