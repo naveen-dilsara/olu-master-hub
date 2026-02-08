@@ -49,6 +49,9 @@ class Olu_Agent_Core {
         // Handle Repo Install
         add_action('admin_post_olu_agent_install', [$this, 'handle_repo_install']);
         
+        // Manual Auto-Update Check
+        add_action('admin_post_olu_agent_force_update', [$this, 'handle_force_update']);
+        
         // Custom Cron Schedules
         add_filter('cron_schedules', [$this, 'add_cron_intervals']);
         
@@ -85,16 +88,22 @@ class Olu_Agent_Core {
     }
 
     private function run_auto_updates_gpl() {
+        $this->log("Starting GPL Auto-Update Check...");
+        
         // 1. Fetch Repo
         $hub_url = 'https://masterhub.olutek.com/api/v1/repo';
         $response = wp_remote_get($hub_url, ['timeout' => 10]);
         
         if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            $this->log("Failed to fetch repo: " . (is_wp_error($response) ? $response->get_error_message() : 'HTTP Error'));
             return;
         }
 
         $repo_plugins = json_decode(wp_remote_retrieve_body($response), true);
-        if (empty($repo_plugins)) return;
+        if (empty($repo_plugins)) {
+             $this->log("Repo empty or decode failed.");
+             return;
+        }
 
         // 2. Scan Installed
         if (!function_exists('get_plugins')) require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -115,17 +124,20 @@ class Olu_Agent_Core {
             }
 
             if ($local_file && version_compare($repo_plugin['version'], $local_version, '>')) {
-                // Update Found! Trigger Update Logic.
-                // We reuse handle_update logic by mocking a request? 
-                // Better to extract update logic. For now, let's call the internal helper if we refactored it.
-                // Since handle_update is an API handler, we'll strip the core logic out?
-                // For speed, let's just duplicate the core update steps here or call a private helper.
+                $this->log("Update found for $slug: Local $local_version < Remote {$repo_plugin['version']}");
                 $this->perform_silent_update($repo_plugin['download_url'], $slug);
             }
         }
         
         // Sync back to Hub
         $this->send_handshake();
+        $this->log("Auto-Update Check Complete.");
+    }
+    
+    private function log($msg) {
+        $file = WP_CONTENT_DIR . '/olu-agent-debug.log';
+        $entry = date('Y-m-d H:i:s') . " [OLU AGENT] " . $msg . PHP_EOL;
+        @file_put_contents($file, $entry, FILE_APPEND);
     }
     
     private function perform_silent_update($url, $slug) {
@@ -625,15 +637,10 @@ class Olu_Agent_Core {
         exit;
     }
 
-    public function handle_configure($request) {
-        $params = $request->get_json_params();
-        $interval = $params['update_interval'] ?? null;
-        
         if ($interval) {
             update_option('olu_agent_update_interval', (int)$interval);
             return new WP_REST_Response(['status' => 'success', 'message' => "Interval updated to $interval"], 200);
         }
         return new WP_REST_Response(['status' => 'error', 'message' => 'Missing interval'], 400);
     }
-}
 }
