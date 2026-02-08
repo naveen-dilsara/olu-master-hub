@@ -68,12 +68,16 @@ class SiteController {
 
         // Get available GPL plugins for the "Push" dropdown
         $pluginModel = new \Olu\Commander\Models\Plugin();
-        $plugins = $pluginModel->getAll();
+        $repoPlugins = $pluginModel->getAll();
+
+        // Get Installed Plugins on Site
+        $installedPlugins = $siteModel->getPlugins($site['id']);
 
         view('sites/manage', [
             'title' => 'Manage Site: ' . parse_url($site['url'], PHP_URL_HOST),
             'site' => $site,
-            'repo_plugins' => $plugins
+            'repo_plugins' => $repoPlugins,
+            'installed_plugins' => $installedPlugins
         ]);
     }
 }

@@ -49,9 +49,29 @@
     <!-- Sidebar Column -->
     <div>
         <div class="card">
-            <h3>Installed Plugins</h3>
-            <div style="color: var(--color-text-muted); padding: 1rem 0; text-align: center; border: 1px dashed var(--color-bg-hover); border-radius: var(--radius-md); margin-top: 1rem;">
-                Scan required (Not implemented in demo)
+            <h3>Installed Plugins (<?= count($installed_plugins) ?>)</h3>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <?php if (empty($installed_plugins)): ?>
+                    <p style="color: var(--color-text-muted); padding: 1rem; text-align: center;">No plugins detected yet.</p>
+                <?php else: ?>
+                    <ul style="list-style: none; padding: 0;">
+                        <?php foreach ($installed_plugins as $plugin): ?>
+                        <li style="padding: 0.75rem; border-bottom: 1px solid var(--color-bg-hover); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="display: block; color: var(--color-text-main);"><?= htmlspecialchars($plugin['name']) ?></strong>
+                                <small style="color: var(--color-text-muted);">v<?= htmlspecialchars($plugin['version']) ?> • <?= htmlspecialchars($plugin['slug']) ?></small>
+                            </div>
+                            <div>
+                                <?php if ($plugin['is_active']): ?>
+                                    <span style="color: var(--color-success); font-size: 0.75rem;">● Active</span>
+                                <?php else: ?>
+                                    <span style="color: var(--color-text-muted); font-size: 0.75rem;">○ Inactive</span>
+                                <?php endif; ?>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
             </div>
         </div>
         

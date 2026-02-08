@@ -76,4 +76,10 @@ class Site {
             ]);
         }
     }
+
+    public function getPlugins($siteId) {
+        $stmt = $this->pdo->prepare("SELECT * FROM site_plugins WHERE site_id = ? ORDER BY name ASC");
+        $stmt->execute([$siteId]);
+        return $stmt->fetchAll();
+    }
 }
