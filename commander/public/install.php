@@ -23,10 +23,15 @@ try {
     
     $sql = file_get_contents($schemaPath);
     
-    // Fix replacements (same as migrate.php)
-    $sql = str_replace('INT AUTO_INCREMENT PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT', $sql);
-    $sql = str_replace('TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', 'DATETIME DEFAULT CURRENT_TIMESTAMP', $sql);
-    $sql = str_replace('TIMESTAMP DEFAULT CURRENT_TIMESTAMP', 'DATETIME DEFAULT CURRENT_TIMESTAMP', $sql);
+    // Check driver
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    
+    // Only apply SQLite fixes if we are using SQLite
+    if ($driver === 'sqlite') {
+        $sql = str_replace('INT AUTO_INCREMENT PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT', $sql);
+        $sql = str_replace('TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', 'DATETIME DEFAULT CURRENT_TIMESTAMP', $sql);
+        $sql = str_replace('TIMESTAMP DEFAULT CURRENT_TIMESTAMP', 'DATETIME DEFAULT CURRENT_TIMESTAMP', $sql);
+    }
     
     // 3. Execute Schema
     echo "<p>Running migration...</p>";
