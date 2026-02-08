@@ -72,4 +72,23 @@ class PluginController {
             'title' => 'Upload New Version'
         ]);
     }
+
+    public function delete() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+            $id = $_POST['id'];
+            $pluginModel = new Plugin();
+            
+            $plugin = $pluginModel->find($id);
+
+            if ($plugin) {
+                if (file_exists($plugin['file_path'])) {
+                    unlink($plugin['file_path']);
+                }
+                $pluginModel->delete($id);
+            }
+        }
+        
+        header('Location: /plugins');
+        exit;
+    }
 }

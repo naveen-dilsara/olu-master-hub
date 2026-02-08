@@ -49,4 +49,15 @@ class Plugin {
         $stmt->execute([$slug]);
         return $stmt->fetch();
     }
+
+    public function find($id) {
+        $stmt = $this->pdo->prepare("SELECT * FROM plugins WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch();
+    }
+
+    public function delete($id) {
+        $stmt = $this->pdo->prepare("DELETE FROM plugins WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
 }
