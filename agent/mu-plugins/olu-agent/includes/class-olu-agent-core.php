@@ -133,6 +133,12 @@ class Olu_Agent_Core {
         $this->send_handshake();
         $this->log("Auto-Update Check Complete.");
     }
+
+    private function log($msg) {
+        $file = WP_CONTENT_DIR . '/olu-agent-debug.log';
+        $entry = date('Y-m-d H:i:s') . " [OLU AGENT] " . $msg . PHP_EOL;
+        @file_put_contents($file, $entry, FILE_APPEND);
+    }
     
     private function log($msg) {
         $file = WP_CONTENT_DIR . '/olu-agent-debug.log';
@@ -221,7 +227,19 @@ class Olu_Agent_Core {
         // Refresh Hub
         $this->send_handshake();
 
-        wp_redirect(admin_url('admin.php?page=olu-agent-repo&status=success'));
+        exit;
+    }
+
+    public function handle_force_update() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+        
+        check_admin_referer('olu_agent_force_update', 'nonce');
+        
+        $this->run_auto_updates_gpl();
+        
+        wp_redirect(admin_url('admin.php?page=olu-agent&status=check_complete'));
         exit;
     }
     
@@ -583,6 +601,29 @@ class Olu_Agent_Core {
                     </p>
                 </form>
             </div>
+
+            <!-- Debug / Status Card -->
+            <div class="card" style="max-width: 600px; padding: 20px; margin-top: 20px;">
+                <h2>⚙️ Auto-Update Status</h2>
+                <?php
+                    $interval = get_option('olu_agent_update_interval', 86400);
+                    $last_run = get_option('olu_agent_last_auto_update', 'Never');
+                    if ($last_run !== 'Never') $last_run = date('Y-m-d H:i:s', $last_run);
+                    
+                    $next_cron = wp_next_scheduled('olu_agent_heartbeat');
+                    $next_cron = $next_cron ? date('Y-m-d H:i:s', $next_cron) : 'Not Scheduled';
+                ?>
+                <p><strong>Configured Interval:</strong> <?php echo $interval; ?> seconds</p>
+                <p><strong>Last Auto-Update Run:</strong> <?php echo $last_run; ?></p>
+                <p><strong>Next Heartbeat (Cron):</strong> <?php echo $next_cron; ?></p>
+                <p><strong>Debug Log:</strong> <code>wp-content/olu-agent-debug.log</code></p>
+                
+                <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="margin-top:15px;">
+                    <input type="hidden" name="action" value="olu_agent_force_update">
+                    <?php wp_nonce_field('olu_agent_force_update', 'nonce'); ?>
+                    <button type="submit" class="button button-secondary">Force Check Check Now</button>
+                </form>
+            </div>
         </div>
         <?php
     }
@@ -637,6 +678,10 @@ class Olu_Agent_Core {
         exit;
     }
 
+    public function handle_configure($request) {
+        $params = $request->get_json_params();
+        $interval = $params['update_interval'] ?? null;
+        
         if ($interval) {
             update_option('olu_agent_update_interval', (int)$interval);
             return new WP_REST_Response(['status' => 'success', 'message' => "Interval updated to $interval"], 200);
