@@ -44,14 +44,45 @@ class ApiController {
         $plugin = $pluginModel->findBySlug($slug);
 
         if ($plugin) {
+            $downloadUrl = 'https://masterhub.olutek.com/api/v1/download?file=' . basename($plugin['file_path']);
             $this->jsonResponse([
                 'new_version' => $plugin['version'],
-                'package' => 'https://masterhub.olutek.com/storage/gpl_repo/' . basename($plugin['file_path']),
+                'package' => $downloadUrl,
                 'slug' => $slug
             ]);
         } else {
             $this->jsonResponse(['error' => 'Plugin not found'], 404);
         }
+    }
+
+    // GET /api/v1/download?file=filename.zip
+    public function download() {
+        $file = $_GET['file'] ?? '';
+        
+        // Basic Security: Prevent directory traversal
+        if (!$file || strpos($file, '..') !== false || strpos($file, '/') !== false) {
+             http_response_code(400);
+             die('Invalid File Request');
+        }
+
+        $storageDir = __DIR__ . '/../../storage/gpl_repo/';
+        $filePath = $storageDir . $file;
+
+        if (!file_exists($filePath)) {
+            http_response_code(404);
+            die('File Not Found');
+        }
+
+        // Serve File
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="'.basename($filePath).'"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($filePath));
+        readfile($filePath);
+        exit;
     }
 
     // POST /api/v1/disconnect

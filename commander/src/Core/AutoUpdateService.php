@@ -25,7 +25,9 @@ class AutoUpdateService {
         }
 
         $latestVersion = $masterPlugin['version'];
-        $downloadUrl = 'https://masterhub.olutek.com/storage/gpl_repo/' . basename($masterPlugin['file_path']);
+        $latestVersion = $masterPlugin['version'];
+        // Use the API download endpoint instead of direct file access
+        $downloadUrl = 'https://masterhub.olutek.com/api/v1/download?file=' . basename($masterPlugin['file_path']);
 
         // 2. Find all sites that have this plugin installed BUT have an older version
         // We join sites and site_plugins
