@@ -7,20 +7,25 @@ use Olu\Commander\Models\Site;
 class DashboardController {
     
     public function index() {
-        // In a real scenario, we would inject the model or use a container
-        // $siteModel = new Site(); 
-        // $sites = $siteModel->getAll(); 
-        
-        // For now, pass dummy data if DB is not set up
+        $siteModel = new \Olu\Commander\Models\Site();
+        $pluginModel = new \Olu\Commander\Models\Plugin();
+
+        $sites = $siteModel->getAll();
+        $plugins = $pluginModel->getAll();
+
         $stats = [
-            'total_sites' => 0,
-            'premium_plugins' => 0,
+            'total_sites' => count($sites),
+            'premium_plugins' => count($plugins),
             'system_status' => 'Operational'
         ];
 
+        // Use recent sites as activity feed for now
+        $recent_activity = array_slice($sites, 0, 5);
+
         view('dashboard', [
             'title' => 'Command Center',
-            'stats' => $stats
+            'stats' => $stats,
+            'activity' => $recent_activity
         ]);
     }
 }
