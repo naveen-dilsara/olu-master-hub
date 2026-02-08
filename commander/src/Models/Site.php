@@ -24,9 +24,10 @@ class Site {
     }
 
     public function create($data) {
-        $sql = "INSERT INTO sites (url, public_key, status, created_at) VALUES (?, ?, 'pending', datetime('now'))";
+        $now = date('Y-m-d H:i:s');
+        $sql = "INSERT INTO sites (url, public_key, status, created_at) VALUES (?, ?, 'pending', ?)";
         $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$data['url'], $data['public_key']]);
+        return $stmt->execute([$data['url'], $data['public_key'], $now]);
     }
 
     public function updateStatus($id, $status) {

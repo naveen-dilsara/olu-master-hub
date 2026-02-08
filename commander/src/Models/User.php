@@ -20,8 +20,9 @@ class User {
 
     public function create($username, $password) {
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $this->pdo->prepare("INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, datetime('now'))");
-        return $stmt->execute([$username, $hash]);
+        $now = date('Y-m-d H:i:s');
+        $stmt = $this->pdo->prepare("INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)");
+        return $stmt->execute([$username, $hash, $now]);
     }
     
     // Helper to create an initial admin if none exists
