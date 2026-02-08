@@ -620,9 +620,12 @@ class Olu_Agent_Core {
         }
 
         // Add success notice
+        // Add success notice
         wp_redirect(admin_url('admin.php?page=olu-agent&status=success'));
         exit;
-        public function handle_configure($request) {
+    }
+
+    public function handle_configure($request) {
         $params = $request->get_json_params();
         $interval = $params['update_interval'] ?? null;
         
