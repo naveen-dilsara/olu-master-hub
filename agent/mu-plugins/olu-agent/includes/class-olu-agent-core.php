@@ -197,7 +197,7 @@ class Olu_Agent_Core {
             exit;
         }
         
-        $skin = new WP_Ajax_Upgrader_Skin(); // Or WP_Upgrader_Skin for visible output but manual redirect
+        $skin = new WP_Upgrader_Skin(); // Or WP_Upgrader_Skin for visible output but manual redirect
         // Ideally we want to see output. But let's keep it simple: silent install & redirect.
         
         $upgrader = new Plugin_Upgrader($skin);
