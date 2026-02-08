@@ -1,3 +1,4 @@
+<?php
 /**
  * Plugin Name: OLU Satellite Agent
  * Description: Connects this site to the OLU Master Hub for remote management.
