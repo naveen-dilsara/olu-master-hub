@@ -150,6 +150,7 @@ class Olu_Agent_Core {
         }
         ob_end_clean();
     }
+    public function handle_repo_install() {
         if (!current_user_can('manage_options')) {
             wp_die('Unauthorized');
         }
@@ -621,5 +622,15 @@ class Olu_Agent_Core {
         // Add success notice
         wp_redirect(admin_url('admin.php?page=olu-agent&status=success'));
         exit;
+        public function handle_configure($request) {
+        $params = $request->get_json_params();
+        $interval = $params['update_interval'] ?? null;
+        
+        if ($interval) {
+            update_option('olu_agent_update_interval', (int)$interval);
+            return new WP_REST_Response(['status' => 'success', 'message' => "Interval updated to $interval"], 200);
+        }
+        return new WP_REST_Response(['status' => 'error', 'message' => 'Missing interval'], 400);
     }
+}
 }
