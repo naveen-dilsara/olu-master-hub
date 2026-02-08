@@ -21,10 +21,6 @@ class AuthController {
             
             // Temporary: Ensure admin exists for first run
             // In production, this would be a seed or migration
-            // Temporary: Ensure Admin User Exists
-            if ($username === 'naveen@olutk.com') {
-                $userModel->ensureAdminExists('naveen@olutk.com', 'Naveen@991217');
-            }
 
             $user = $userModel->findByUsername($username);
 
