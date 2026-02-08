@@ -70,7 +70,7 @@ class ApiController {
                 'name' => $p['name'],
                 'slug' => $p['slug'],
                 'version' => $p['version'],
-                'description' => $p['description'], // Assuming description exists or is added
+                'description' => $p['description'] ?? '', // Fix for missing column
                 'download_url' => 'https://masterhub.olutek.com/api/v1/download?file=' . basename($p['file_path'])
             ];
         }, $plugins);
