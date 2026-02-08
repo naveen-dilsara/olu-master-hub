@@ -17,7 +17,7 @@ class AutoUpdateService {
         $this->pluginModel = new Plugin();
     }
 
-    public function triggerUpdate($pluginSlug) {
+    public function triggerUpdate($pluginSlug, $force = false) {
         // 1. Get the latest version info for this plugin
         $masterPlugin = $this->pluginModel->findBySlug($pluginSlug);
         if (!$masterPlugin) {
@@ -25,11 +25,10 @@ class AutoUpdateService {
         }
 
         $latestVersion = $masterPlugin['version'];
-        $latestVersion = $masterPlugin['version'];
         // Use the API download endpoint instead of direct file access
         $downloadUrl = 'https://masterhub.olutek.com/api/v1/download?file=' . basename($masterPlugin['file_path']);
 
-        // 2. Find all sites that have this plugin installed BUT have an older version
+        // 2. Find all sites that have this plugin installed
         // We join sites and site_plugins
         $sql = "
             SELECT s.id, s.url, s.public_key, sp.version as site_version 
@@ -46,8 +45,8 @@ class AutoUpdateService {
         $results = [];
 
         foreach ($sites as $site) {
-             // Compare versions
-             if (version_compare($site['site_version'], $latestVersion, '<')) {
+             // Compare versions OR Force
+             if ($force || version_compare($site['site_version'], $latestVersion, '<')) {
                  // Trigger Update
                  $result = $this->pushUpdateToSite($site, $pluginSlug, $downloadUrl, $latestVersion);
                  $results[] = [

@@ -68,9 +68,37 @@ class PluginController {
             }
         }
         
+        $plugin = null;
+        if (isset($_GET['id'])) {
+             $id = $_GET['id'];
+             $pluginModel = new Plugin();
+             $plugin = $pluginModel->find($id);
+        }
+
         view('plugins/upload', [
-            'title' => 'Upload New Version'
+             'title' => $plugin ? 'Edit Plugin: ' . $plugin['name'] : 'Upload New Plugin',
+             'plugin' => $plugin
         ]);
+    }
+
+    public function push() {
+        if (!isset($_POST['id'])) {
+            header('Location: /plugins');
+            exit;
+        }
+
+        $id = $_POST['id'];
+        $pluginModel = new Plugin();
+        $plugin = $pluginModel->find($id);
+        
+        if ($plugin) {
+             $updater = new \Olu\Commander\Core\AutoUpdateService();
+             // Force Update = true
+             $updater->triggerUpdate($plugin['slug'], true);
+        }
+        
+        header('Location: /plugins');
+        exit;
     }
 
     public function delete() {

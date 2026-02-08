@@ -36,9 +36,19 @@
                     <td style="padding: 1rem;"><?= $plugin['updated_at'] ?></td>
                     <td style="padding: 1rem;">
                         <div style="display: flex; gap: 0.5rem;">
-                            <form method="post" action="/plugins/delete" onsubmit="return confirm('Start Protocol: DELETE?');">
+                            <!-- Edit -->
+                            <a href="/plugins/upload?id=<?= $plugin['id'] ?>" style="background: none; border: 1px solid var(--color-primary); color: var(--color-primary); padding: 0.25rem 0.5rem; border-radius: 0.25rem; text-decoration: none; font-size: 0.85rem;">Edit</a>
+                            
+                            <!-- Push/Broadcast -->
+                            <form method="post" action="/plugins/push" onsubmit="return confirm('⚠️ FORCE UPDATE: This will push version <?= htmlspecialchars($plugin['version']) ?> to ALL sites with this plugin installed. Proceed?');">
                                 <input type="hidden" name="id" value="<?= $plugin['id'] ?>">
-                                <button type="submit" style="background: none; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer;">Delete</button>
+                                <button type="submit" style="background: var(--color-primary); border: 1px solid var(--color-primary); color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.85rem;">Push Update</button>
+                            </form>
+
+                            <!-- Delete -->
+                            <form method="post" action="/plugins/delete" onsubmit="return confirm('⚠️ DELETE: This will remove the plugin from the repository. Proceed?');">
+                                <input type="hidden" name="id" value="<?= $plugin['id'] ?>">
+                                <button type="submit" style="background: none; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 0.25rem 0.5rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.85rem;">Delete</button>
                             </form>
                         </div>
                     </td>

@@ -81,6 +81,8 @@ if ($path === '/' || $path === '/index.php') {
     (new PluginController())->index();
 } elseif ($path === '/plugins/upload') {
     (new PluginController())->upload();
+} elseif ($path === '/plugins/push') {
+    (new PluginController())->push();
 } elseif ($path === '/plugins/delete') {
     (new PluginController())->delete();
 } else {
