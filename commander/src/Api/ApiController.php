@@ -21,6 +21,15 @@ class ApiController {
         }
 
         $siteModel = new Site();
+        $siteId = $siteModel->registerOrUpdate($input);
+
+        // Process Plugins if available
+        if ($siteId && isset($input['plugins']) && is_array($input['plugins'])) {
+            $siteModel->savePlugins($siteId, $input['plugins']);
+        }
+
+        $this->jsonResponse(['status' => 'success', 'site_id' => $siteId]);
+    }
         
         // Check if site exists
         // simplified logic: if generic URL found, update key, else create
