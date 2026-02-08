@@ -60,6 +60,16 @@
                             <div>
                                 <strong style="display: block; color: var(--color-text-main);"><?= htmlspecialchars($plugin['name']) ?></strong>
                                 <small style="color: var(--color-text-muted);">v<?= htmlspecialchars($plugin['version']) ?> • <?= htmlspecialchars($plugin['slug']) ?></small>
+                                <?php if (!empty($plugin['has_update'])): ?>
+                                    <form method="POST" action="/sites/dispatch" style="display:inline;">
+                                        <input type="hidden" name="site_id" value="<?= $site['id'] ?>">
+                                        <input type="hidden" name="plugin_slug" value="<?= $plugin['slug'] ?>">
+                                        <input type="hidden" name="is_standard_update" value="1">
+                                        <button type="submit" style="margin-left: 0.5rem; background: var(--color-accent); color: white; border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">
+                                            Update Available ⬆
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
                             <div>
                                 <?php if ($plugin['is_active']): ?>

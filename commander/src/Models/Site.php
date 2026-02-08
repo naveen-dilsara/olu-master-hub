@@ -58,9 +58,9 @@ class Site {
         // First delete old entries to ensure clean sync (simple approach)
         // Or upsert. Let's do Insert Ignore / On Duplicate Key Update
         
-        $sql = "INSERT INTO site_plugins (site_id, slug, name, version, is_active, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE name = VALUES(name), version = VALUES(version), is_active = VALUES(is_active), updated_at = VALUES(updated_at)";
+        $sql = "INSERT INTO site_plugins (site_id, slug, name, version, is_active, has_update, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE name = VALUES(name), version = VALUES(version), is_active = VALUES(is_active), has_update = VALUES(has_update), updated_at = VALUES(updated_at)";
         
         $stmt = $this->pdo->prepare($sql);
         $now = date('Y-m-d H:i:s');
@@ -72,6 +72,7 @@ class Site {
                 $plugin['name'],
                 $plugin['version'],
                 $plugin['is_active'] ? 1 : 0,
+                $plugin['has_update'] ? 1 : 0,
                 $now
             ]);
         }
