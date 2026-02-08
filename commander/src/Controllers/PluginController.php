@@ -56,6 +56,13 @@ class PluginController {
                     $pluginModel->create($data);
                 }
 
+                // Trigger Auto-Update
+                $updater = new \Olu\Commander\Core\AutoUpdateService();
+                $result = $updater->triggerUpdate($slug);
+
+                // Ideally flash message the result
+                // $_SESSION['flash'] = "Uploaded & Triggered update for " . count($result['results']) . " sites.";
+
                 header('Location: /plugins');
                 exit;
             }
