@@ -1,6 +1,6 @@
 <?php
 // Debug script to check .env loading
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 echo "<h1>Environment Debugger</h1>";
 

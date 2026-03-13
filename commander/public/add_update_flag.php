@@ -1,6 +1,6 @@
 <?php
 // add_update_flag.php
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Olu\Commander\Core\Database;
 

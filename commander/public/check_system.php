@@ -2,7 +2,7 @@
 // OLU Master Hub - Diagnostic Tool
 header('Content-Type: text/plain');
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 use Olu\Commander\Core\Database;
 
 echo "=== OLU System Check ===\n\n";
