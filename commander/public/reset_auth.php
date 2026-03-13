@@ -20,9 +20,12 @@ try {
     $stmt->execute(['admin']);
     $deleted = $stmt->rowCount();
     
-    // 2. Delete existing 'naveen' user to ensure fresh hash
     $username = $_ENV['ADMIN_USERNAME'] ?? 'admin@olutk.com';
     $password = $_ENV['ADMIN_PASSWORD'] ?? 'OluMaster!2026#SecureLogin';
+    
+    // 2. Delete existing user to ensure fresh hash and avoid duplicates
+    $stmt_del = $pdo->prepare("DELETE FROM users WHERE username = ?");
+    $stmt_del->execute([$username]);
     $hash = password_hash($password, PASSWORD_DEFAULT);
     $created_at = date('Y-m-d H:i:s');
     
