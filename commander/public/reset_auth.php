@@ -15,11 +15,8 @@ try {
     $deleted = $stmt->rowCount();
     
     // 2. Delete existing 'naveen' user to ensure fresh hash
-    $stmt->execute(['naveen@olutk.com']);
-    
-    // 3. Create new user with correct hash
-    $username = 'naveen@olutk.com';
-    $password = 'Naveen@991217';
+    $username = $_ENV['ADMIN_USERNAME'] ?? 'admin@olutk.com';
+    $password = $_ENV['ADMIN_PASSWORD'] ?? 'OluMaster!2026#SecureLogin';
     $hash = password_hash($password, PASSWORD_DEFAULT);
     $created_at = date('Y-m-d H:i:s');
     
@@ -30,7 +27,6 @@ try {
     echo "<h1>Authentication Reset Successful</h1>";
     echo "<p>Deleted old 'admin' user (count: $deleted).</p>";
     echo "<p>Created user: <strong>$username</strong></p>";
-    echo "<p>Password set to: <strong>$password</strong></p>";
     echo "<p style='color:red'>Please delete this file (reset_auth.php) from your server after use.</p>";
     echo "<p><a href='/login'>Go to Login</a></p>";
 

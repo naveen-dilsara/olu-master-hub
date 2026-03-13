@@ -37,12 +37,13 @@ try {
     echo "<p>Running migration...</p>";
     // Split by semicolon via PDO usually works, or execute raw
     $pdo->exec($sql);
-    echo "<p style='color:green'>Tables created.</p>";
+    $adminUsername = $_ENV['ADMIN_USERNAME'] ?? 'admin';
+    $adminPassword = $_ENV['ADMIN_PASSWORD'] ?? 'OluAdmin!2026#SecurePass';
     
     // 4. Create Admin
     $userModel = new \Olu\Commander\Models\User();
-    if ($userModel->ensureAdminExists('admin', 'password')) {
-        echo "<p style='color:green'><strong>Admin user created.</strong><br>User: admin<br>Pass: password</p>";
+    if ($userModel->ensureAdminExists($adminUsername, $adminPassword)) {
+        echo "<p style='color:green'><strong>Admin user created.</strong><br>User: $adminUsername</p>";
     } else {
         echo "<p>Admin user already exists.</p>";
     }
