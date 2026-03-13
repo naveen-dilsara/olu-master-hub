@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/../../vendor/autoload.php';
 
+// Load .env
+if (file_exists(__DIR__ . '/../../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
+    $dotenv->safeLoad();
+}
+
 use Olu\Commander\Core\Database;
 
 // Security: Only allow running if explicitly accessed, maybe add a simple token or just rely on obscurity for this one-time fix.
