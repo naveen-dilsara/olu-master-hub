@@ -4,7 +4,7 @@
     "type": "project",
     "autoload": {
         "psr-4": {
-            "Olu\\Commander\\": "src/"
+            "Olu\\Commander\\": "commander/src/"
         }
     },
     "require": {
